@@ -4,8 +4,9 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
-	adapter "go-sql-adapter"
 	"time"
+
+	adapter "github.com/cdleo/go-sql-adapter"
 
 	"github.com/cdleo/go-commons/sqlcommons"
 	"github.com/godror/godror"

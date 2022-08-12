@@ -2,11 +2,11 @@ package sqladapter_test
 
 import (
 	"fmt"
-	adapter "go-sql-adapter"
-	"go-sql-adapter/loggers"
+
 	"os"
 	"strconv"
 
+	adapter "github.com/cdleo/go-sql-adapter"
 	"github.com/cdleo/go-sql-adapter/engines"
 	"github.com/cdleo/go-sql-adapter/loggers"
 	"github.com/cdleo/go-sql-adapter/translators"

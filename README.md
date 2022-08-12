@@ -1,4 +1,4 @@
-# go-sqldb
+# go-sql-adapter
 
 [![Go Reference](http://img.shields.io/badge/godoc-reference-blue.svg?style=flat)](https://pkg.go.dev/github.com/cdleo/go-sqldb) [![license](http://img.shields.io/badge/license-MIT-red.svg?style=flat)](https://raw.githubusercontent.com/cdleo/go-sqldb/master/LICENSE) [![Build Status](https://scrutinizer-ci.com/g/cdleo/go-sqldb/badges/build.png?b=main)](https://scrutinizer-ci.com/g/cdleo/go-sqldb/build-status/main) [![Code Coverage](https://scrutinizer-ci.com/g/cdleo/go-sqldb/badges/coverage.png?b=main)](https://scrutinizer-ci.com/g/cdleo/go-sqldb/?branch=main) [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/cdleo/go-sqldb/badges/quality-score.png?b=main)](https://scrutinizer-ci.com/g/cdleo/go-sqldb/?branch=main)
 
@@ -110,7 +110,7 @@ func Example_sqlConn() {
 
 ## Sample
 
-You can find a sample of the use of go-sqldb project [HERE](https://github.com/cdleo/go-sqldb/blob/master/sqlDB_example_test.go)
+You can find a sample of the use of go-sqldb project [HERE](https://github.com/cdleo/go-sql-adapter/blob/master/sqlAdapter_example_test.go)
 
 ## Contributing
 

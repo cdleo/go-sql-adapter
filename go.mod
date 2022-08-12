@@ -1,4 +1,4 @@
-module go-sql-adapter
+module github.com/cdleo/go-sql-adapter
 
 go 1.19
 
@@ -7,6 +7,7 @@ require (
 	github.com/cdleo/go-commons v0.0.0-20220616132805-9c906336a116
 	github.com/cdleo/go-sqldb v0.0.0-20220616195529-93e5b12e7cfc
 	github.com/godror/godror v0.34.0
+	github.com/golang/mock v1.6.0
 	github.com/lib/pq v1.10.6
 	github.com/mattn/go-sqlite3 v1.14.14
 	github.com/shogo82148/go-sql-proxy v0.6.1
