@@ -4,9 +4,10 @@ import (
 	"database/sql"
 	"database/sql/driver"
 
+	adapter "github.com/cdleo/go-sql-adapter"
+
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/cdleo/go-commons/sqlcommons"
-	"github.com/cdleo/go-sqldb"
 )
 
 type mockDBSqlConn struct {
@@ -14,7 +15,9 @@ type mockDBSqlConn struct {
 	mock   sqlmock.Sqlmock
 }
 
-func NewMockSQLEngineAdapter(initOk bool) sqldb.MockSQLEngineAdapter {
+const mock_DriverName = "sqlmock"
+
+func NewMockSQLConnector(initOk bool) adapter.MockSQLEngineConnector {
 
 	return &mockDBSqlConn{
 		initOk,
@@ -31,6 +34,14 @@ func (s *mockDBSqlConn) Open() (*sql.DB, error) {
 		return nil, sqlcommons.ConnectionFailed
 	}
 
+}
+
+func (s *mockDBSqlConn) DriverName() string {
+	return mock_DriverName
+}
+
+func (s *mockDBSqlConn) Driver() driver.Driver {
+	return nil
 }
 
 func (s *mockDBSqlConn) ErrorHandler(err error) error {

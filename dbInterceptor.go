@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/cdleo/go-commons/logger"
-	proxy "github.com/shogo82148/go-sql-proxy"
+	proxy "github.com/cdleo/go-sql-proxy"
 )
 
 func Register(connector SQLEngineConnector, translator SQLSyntaxTranslator, logger logger.Logger) {
@@ -18,19 +18,39 @@ func Register(connector SQLEngineConnector, translator SQLSyntaxTranslator, logg
 	}
 
 	sql.Register(connector.DriverName(), proxy.NewProxyContext(connector.Driver(), &proxy.HooksContext{
-		Open: func(_ context.Context, _ interface{}, conn *proxy.Conn) error {
+		PostOpen: func(_ context.Context, _ interface{}, conn *proxy.Conn, err error) error {
+			if err != nil {
+				stdErr := connector.ErrorHandler(err)
+				logger.Errorf(stdErr, "Open (source: %s)", err.Error())
+				return stdErr
+			}
 			logger.Qry("Open")
 			return nil
 		},
-		Begin: func(_ context.Context, _ interface{}, conn *proxy.Conn) error {
+		PostBegin: func(_ context.Context, _ interface{}, conn *proxy.Conn, err error) error {
+			if err != nil {
+				stdErr := connector.ErrorHandler(err)
+				logger.Errorf(stdErr, "Begin (source: %s)", err.Error())
+				return stdErr
+			}
 			logger.Qry("Begin")
 			return nil
 		},
-		Commit: func(_ context.Context, _ interface{}, tx *proxy.Tx) error {
+		PostCommit: func(_ context.Context, _ interface{}, tx *proxy.Tx, err error) error {
+			if err != nil {
+				stdErr := connector.ErrorHandler(err)
+				logger.Errorf(stdErr, "Commit (source: %s)", err.Error())
+				return stdErr
+			}
 			logger.Qry("Commit")
 			return nil
 		},
-		Rollback: func(_ context.Context, _ interface{}, tx *proxy.Tx) error {
+		PostRollback: func(_ context.Context, _ interface{}, tx *proxy.Tx, err error) error {
+			if err != nil {
+				stdErr := connector.ErrorHandler(err)
+				logger.Errorf(stdErr, "Rollback (source: %s)", err.Error())
+				return stdErr
+			}
 			logger.Qry("Rollback")
 			return nil
 		},
@@ -38,34 +58,39 @@ func Register(connector SQLEngineConnector, translator SQLSyntaxTranslator, logg
 			stmt.QueryString = translator.Translate(stmt.QueryString)
 			return nil, nil
 		},
+		PostPrepare: func(_ context.Context, ctx interface{}, stmt *proxy.Stmt, err error) error {
+			if err != nil {
+				stdErr := connector.ErrorHandler(err)
+				logger.Errorf(stdErr, "Prepare (source: %s)", err.Error())
+				return stdErr
+			}
+			logger.Tracef("Prepare: %s", prettyQuery(stmt.QueryString))
+			return nil
+		},
 		PreQuery: func(_ context.Context, stmt *proxy.Stmt, args []driver.NamedValue) (interface{}, error) {
 			stmt.QueryString = translator.Translate(stmt.QueryString)
 			return time.Now(), nil
 		},
-		Query: func(_ context.Context, _ interface{}, stmt *proxy.Stmt, args []driver.NamedValue, rows driver.Rows) error {
-			logger.Qryf("Query: %s; args = %v", prettyQuery(stmt.QueryString), args)
-			return nil
-		},
 		PostQuery: func(_ context.Context, ctx interface{}, stmt *proxy.Stmt, args []driver.NamedValue, rows driver.Rows, err error) error {
 			if err != nil {
-				return connector.ErrorHandler(err)
+				stdErr := connector.ErrorHandler(err)
+				logger.Errorf(stdErr, "Query: %s; Args = %v (source: %s)", prettyQuery(stmt.QueryString), args, err.Error())
+				return stdErr
 			}
-			logger.Tracef("Query: %s; args = %v (%s)", prettyQuery(stmt.QueryString), args, time.Since(ctx.(time.Time)))
+			logger.Tracef("Query: %s; Args = %v (%s)", prettyQuery(stmt.QueryString), args, time.Since(ctx.(time.Time)))
 			return nil
 		},
 		PreExec: func(_ context.Context, stmt *proxy.Stmt, _ []driver.NamedValue) (interface{}, error) {
 			stmt.QueryString = translator.Translate(stmt.QueryString)
 			return time.Now(), nil
 		},
-		Exec: func(_ context.Context, _ interface{}, stmt *proxy.Stmt, args []driver.NamedValue, result driver.Result) error {
-			logger.Qryf("Exec: %s; args = %v", prettyQuery(stmt.QueryString), args)
-			return nil
-		},
 		PostExec: func(_ context.Context, ctx interface{}, stmt *proxy.Stmt, args []driver.NamedValue, _ driver.Result, err error) error {
 			if err != nil {
-				return connector.ErrorHandler(err)
+				stdErr := connector.ErrorHandler(err)
+				logger.Errorf(stdErr, "Exec: %s; Args = %v (source: %s)", prettyQuery(stmt.QueryString), args, err.Error())
+				return stdErr
 			}
-			logger.Tracef("Exec: %s; args = %v (%s)", prettyQuery(stmt.QueryString), args, time.Since(ctx.(time.Time)))
+			logger.Tracef("Exec: %s; Args = %v (%s)", prettyQuery(stmt.QueryString), args, time.Since(ctx.(time.Time)))
 			return nil
 		},
 	}))

@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/cdleo/go-commons/sqlcommons"
-	"github.com/cdleo/go-sqldb"
-	"github.com/cdleo/go-sqldb/engines"
-	enginesMocks "github.com/cdleo/go-sqldb/engines/mocks"
-	"github.com/cdleo/go-sqldb/translators"
+	adapter "github.com/cdleo/go-sql-adapter"
+	"github.com/cdleo/go-sql-adapter/engines"
+	enginesMocks "github.com/cdleo/go-sql-adapter/engines/mocks"
+	"github.com/cdleo/go-sql-adapter/translators"
 	"github.com/stretchr/testify/require"
 )
 
@@ -25,308 +25,312 @@ type Customers struct {
 
 func Test_sqlConn_InitErr(t *testing.T) {
 	// Setup
-	adapter := enginesMocks.NewMockSQLEngineAdapter(false)
+	connector := enginesMocks.NewMockSQLConnector(false)
 	translator := translators.NewNoopTranslator()
 
-	sqlConn := sqldb.NewSQLDB(adapter, translator)
-	require.Error(t, sqlConn.Open())
+	sqlConn := adapter.NewSQLAdapter(connector, translator, nil)
+	_, err := sqlConn.Open()
+	require.Error(t, err)
 }
 
 func Test_sqlConn_InitOK(t *testing.T) {
 	// Setup
-	adapter := enginesMocks.NewMockSQLEngineAdapter(true)
+	connector := enginesMocks.NewMockSQLConnector(true)
 	translator := translators.NewNoopTranslator()
 
-	sqlConn := sqldb.NewSQLDB(adapter, translator)
-	require.NoError(t, sqlConn.Open())
+	sqlConn := adapter.NewSQLAdapter(connector, translator, nil)
+	_, err := sqlConn.Open()
+	require.NoError(t, err)
 }
 
 func Test_sqlConn_CreateTables(t *testing.T) {
 	// Setup
-	adapter := engines.NewSqlite3Adapter(":memory:")
+	connector := engines.NewSqlite3Connector(":memory:")
 	translator := translators.NewNoopTranslator()
-	sqlConn := sqldb.NewSQLDB(adapter, translator)
+	sqlConn := adapter.NewSQLAdapter(connector, translator, nil)
 
-	err := sqlConn.Open()
+	db, err := sqlConn.Open()
 	require.NoError(t, err)
 
 	// Exec
-	require.NoError(t, createTablesHelper(sqlConn))
+	require.NoError(t, createTablesHelper(db))
 
-	sqlConn.Close()
+	db.Close()
 }
 
 func Test_sqlConn_DropTables(t *testing.T) {
 	// Setup
-	adapter := engines.NewSqlite3Adapter(":memory:")
+	connector := engines.NewSqlite3Connector(":memory:")
 	translator := translators.NewNoopTranslator()
-	sqlConn := sqldb.NewSQLDB(adapter, translator)
+	sqlConn := adapter.NewSQLAdapter(connector, translator, nil)
 
-	err := sqlConn.Open()
+	db, err := sqlConn.Open()
 	require.NoError(t, err)
-	require.NoError(t, createTablesHelper(sqlConn))
+	require.NoError(t, createTablesHelper(db))
 
 	// Exec
-	require.NoError(t, dropTablesHelper(sqlConn))
+	require.NoError(t, dropTablesHelper(db))
+
+	db.Close()
 }
 
 func Test_sqlConn_StoreData(t *testing.T) {
 	// Setup
-	adapter := engines.NewSqlite3Adapter(":memory:")
+	connector := engines.NewSqlite3Connector(":memory:")
 	translator := translators.NewNoopTranslator()
-	sqlConn := sqldb.NewSQLDB(adapter, translator)
+	sqlConn := adapter.NewSQLAdapter(connector, translator, nil)
 
-	err := sqlConn.Open()
+	db, err := sqlConn.Open()
 	require.NoError(t, err)
 
-	require.NoError(t, createTablesHelper(sqlConn))
+	require.NoError(t, createTablesHelper(db))
 
 	// Exec
-	require.NoError(t, insertDataHelper(sqlConn))
+	require.NoError(t, insertDataHelper(db))
 
-	sqlConn.Close()
+	db.Close()
 }
 
 func Test_sqlConn_ReturnData(t *testing.T) {
 	// Setup
-	adapter := engines.NewSqlite3Adapter(":memory:")
+	connector := engines.NewSqlite3Connector(":memory:")
 	translator := translators.NewNoopTranslator()
-	sqlConn := sqldb.NewSQLDB(adapter, translator)
+	sqlConn := adapter.NewSQLAdapter(connector, translator, nil)
 
-	err := sqlConn.Open()
+	db, err := sqlConn.Open()
 	require.NoError(t, err)
 
-	require.NoError(t, createTablesHelper(sqlConn))
-	require.NoError(t, insertDataHelper(sqlConn))
+	require.NoError(t, createTablesHelper(db))
+	require.NoError(t, insertDataHelper(db))
 
 	// Exec
-	rows, err2 := sqlConn.Query("SELECT name FROM customers")
+	rows, err2 := db.Query("SELECT name FROM customers")
 	defer rows.Close()
 
 	require.NoError(t, err2)
 	require.True(t, rows.Next())
 
-	sqlConn.Close()
+	db.Close()
 }
 
 func Test_sqlConn_CanThrowInvalidTableError(t *testing.T) {
 	// Setup
-	adapter := engines.NewSqlite3Adapter(":memory:")
+	connector := engines.NewSqlite3Connector(":memory:")
 	translator := translators.NewNoopTranslator()
-	sqlConn := sqldb.NewSQLDB(adapter, translator)
+	sqlConn := adapter.NewSQLAdapter(connector, translator, nil)
 
-	err := sqlConn.Open()
+	db, err := sqlConn.Open()
 	require.NoError(t, err)
 
-	require.NoError(t, createTablesHelper(sqlConn))
-	require.NoError(t, insertDataHelper(sqlConn))
+	require.NoError(t, createTablesHelper(db))
+	require.NoError(t, insertDataHelper(db))
 
 	// Exec
-	_, err2 := sqlConn.Query("SELECT name FROM customerxs")
+	_, err2 := db.Query("SELECT name FROM customerxs")
 
 	require.Error(t, err2)
 
-	sqlConn.Close()
+	db.Close()
 }
 
 func Test_sqlConn_CanThrowCannotInsertNullError(t *testing.T) {
 	// Setup
-	adapter := engines.NewSqlite3Adapter(":memory:")
+	connector := engines.NewSqlite3Connector(":memory:")
 	translator := translators.NewNoopTranslator()
-	sqlConn := sqldb.NewSQLDB(adapter, translator)
+	sqlConn := adapter.NewSQLAdapter(connector, translator, nil)
 
-	err := sqlConn.Open()
+	db, err := sqlConn.Open()
 	require.NoError(t, err)
 
-	require.NoError(t, createTablesHelper(sqlConn))
+	require.NoError(t, createTablesHelper(db))
 
 	// Exec
-	_, err2 := sqlConn.Exec("INSERT INTO customers (name, updatetime) VALUES (:1,:2)", nil, time.Now())
+	_, err2 := db.Exec("INSERT INTO customers (name, updatetime) VALUES (:1,:2)", nil, time.Now())
 
 	require.ErrorIs(t, err2, sqlcommons.CannotSetNullColumn)
 
-	sqlConn.Close()
+	db.Close()
 }
 
 func Test_sqlConn_CanThrowCannotUpdateNullError(t *testing.T) {
 	// Setup
-	adapter := engines.NewSqlite3Adapter(":memory:")
+	connector := engines.NewSqlite3Connector(":memory:")
 	translator := translators.NewNoopTranslator()
-	sqlConn := sqldb.NewSQLDB(adapter, translator)
+	sqlConn := adapter.NewSQLAdapter(connector, translator, nil)
 
-	err := sqlConn.Open()
+	db, err := sqlConn.Open()
 	require.NoError(t, err)
 
-	require.NoError(t, createTablesHelper(sqlConn))
-	require.NoError(t, insertDataHelper(sqlConn))
+	require.NoError(t, createTablesHelper(db))
+	require.NoError(t, insertDataHelper(db))
 
 	// Exec
-	_, err2 := sqlConn.Exec("UPDATE customers c SET name = :1 WHERE c.name = :2", nil, "Pablo")
+	_, err2 := db.Exec("UPDATE customers c SET name = :1 WHERE c.name = :2", nil, "Pablo")
 
 	require.Error(t, err2, sqlcommons.CannotSetNullColumn)
 
-	sqlConn.Close()
+	db.Close()
 }
 
 func Test_sqlConn_CanThrowUniqueConstraintViolationError(t *testing.T) {
 	// Setup
-	adapter := engines.NewSqlite3Adapter(":memory:?_foreign_keys=on")
+	connector := engines.NewSqlite3Connector(":memory:?_foreign_keys=on")
 	translator := translators.NewNoopTranslator()
-	sqlConn := sqldb.NewSQLDB(adapter, translator)
+	sqlConn := adapter.NewSQLAdapter(connector, translator, nil)
 
-	err := sqlConn.Open()
+	db, err := sqlConn.Open()
 	require.NoError(t, err)
 
-	require.NoError(t, createTablesHelper(sqlConn))
-	require.NoError(t, insertDataHelper(sqlConn))
+	require.NoError(t, createTablesHelper(db))
+	require.NoError(t, insertDataHelper(db))
 
 	// Exec
-	_, err2 := sqlConn.Exec("INSERT INTO customers (name, updatetime, age, cust_group)VALUES(:1, :2, :3, :4)", "Juan", time.Now(), nil, 1)
+	_, err2 := db.Exec("INSERT INTO customers (name, updatetime, age, cust_group)VALUES(:1, :2, :3, :4)", "Juan", time.Now(), nil, 1)
 
 	require.ErrorIs(t, err2, sqlcommons.UniqueConstraintViolation)
 
-	sqlConn.Close()
+	db.Close()
 }
 
 func Test_sqlConn_CanThrowForeignKeyConstraintViolationError(t *testing.T) {
 	// Setup
-	adapter := engines.NewSqlite3Adapter(":memory:?_foreign_keys=on")
+	connector := engines.NewSqlite3Connector(":memory:?_foreign_keys=on")
 	translator := translators.NewNoopTranslator()
-	sqlConn := sqldb.NewSQLDB(adapter, translator)
+	sqlConn := adapter.NewSQLAdapter(connector, translator, nil)
 
-	err := sqlConn.Open()
+	db, err := sqlConn.Open()
 	require.NoError(t, err)
 
-	require.NoError(t, createTablesHelper(sqlConn))
-	require.NoError(t, insertDataHelper(sqlConn))
+	require.NoError(t, createTablesHelper(db))
+	require.NoError(t, insertDataHelper(db))
 
 	// Exec
-	_, err2 := sqlConn.Exec("UPDATE customers SET cust_group = :1 WHERE name = :2", 2, "Pablo")
+	_, err2 := db.Exec("UPDATE customers SET cust_group = :1 WHERE name = :2", 2, "Pablo")
 
 	require.ErrorIs(t, err2, sqlcommons.IntegrityConstraintViolation)
 
-	sqlConn.Close()
+	db.Close()
 }
 
 func Test_sqlConn_CanThrowIntegrityConstraintViolationError(t *testing.T) {
 	// Setup
-	adapter := engines.NewSqlite3Adapter(":memory:?_foreign_keys=on")
+	connector := engines.NewSqlite3Connector(":memory:?_foreign_keys=on")
 	translator := translators.NewNoopTranslator()
-	sqlConn := sqldb.NewSQLDB(adapter, translator)
+	sqlConn := adapter.NewSQLAdapter(connector, translator, nil)
 
-	err := sqlConn.Open()
+	db, err := sqlConn.Open()
 	require.NoError(t, err)
 
-	require.NoError(t, createTablesHelper(sqlConn))
-	require.NoError(t, insertDataHelper(sqlConn))
+	require.NoError(t, createTablesHelper(db))
+	require.NoError(t, insertDataHelper(db))
 
 	// Exec
-	_, err2 := sqlConn.Exec("DELETE from customers_groups WHERE id = :1", 1)
+	_, err2 := db.Exec("DELETE from customers_groups WHERE id = :1", 1)
 
 	require.ErrorIs(t, err2, sqlcommons.IntegrityConstraintViolation)
 
-	sqlConn.Close()
+	db.Close()
 }
 
 func Test_sqlConn_CanThrowValueTooLargeError(t *testing.T) {
 	// Setup
-	adapter := enginesMocks.NewMockSQLEngineAdapter(true)
+	connector := enginesMocks.NewMockSQLConnector(true)
 	translator := translators.NewNoopTranslator()
-	sqlConn := sqldb.NewSQLDB(adapter, translator)
+	sqlConn := adapter.NewSQLAdapter(connector, translator, nil)
 
-	err := sqlConn.Open()
+	db, err := sqlConn.Open()
 	require.NoError(t, err)
 
 	// Exec
 	query := fmt.Sprintf("INSERT INTO customers (name, cust_group) VALUES (%s,%d)", "'verylongname'", 1)
-	adapter.PatchExec(query, sqlcommons.ValueTooLargeForColumn)
+	connector.PatchExec(query, sqlcommons.ValueTooLargeForColumn)
 
-	_, err2 := sqlConn.Exec(query)
+	_, err2 := db.Exec(query)
 
 	require.ErrorIs(t, err2, sqlcommons.ValueTooLargeForColumn)
 
-	sqlConn.Close()
+	db.Close()
 }
 
 func Test_sqlConn_CanThrowSubqueryReturnsMoreThanOneRowError(t *testing.T) {
 	// Setup
-	adapter := enginesMocks.NewMockSQLEngineAdapter(true)
+	connector := enginesMocks.NewMockSQLConnector(true)
 	translator := translators.NewNoopTranslator()
-	sqlConn := sqldb.NewSQLDB(adapter, translator)
+	sqlConn := adapter.NewSQLAdapter(connector, translator, nil)
 
-	err := sqlConn.Open()
+	db, err := sqlConn.Open()
 	require.NoError(t, err)
 
 	query := "SELECT name FROM customers WHERE id = (SELECT id FROM customers)"
-	adapter.PatchQuery(query, nil, nil, sqlcommons.SubqueryReturnsMoreThanOneRow)
+	connector.PatchQuery(query, nil, nil, sqlcommons.SubqueryReturnsMoreThanOneRow)
 
 	// Exec
-	_, err2 := sqlConn.Query(query)
+	_, err2 := db.Query(query)
 
 	require.ErrorIs(t, err2, sqlcommons.SubqueryReturnsMoreThanOneRow)
 
-	sqlConn.Close()
+	db.Close()
 }
 
 func Test_sqlConn_CanThrowInvalidNumericValueError(t *testing.T) {
 	// Setup
-	adapter := enginesMocks.NewMockSQLEngineAdapter(true)
+	connector := enginesMocks.NewMockSQLConnector(true)
 	translator := translators.NewNoopTranslator()
-	sqlConn := sqldb.NewSQLDB(adapter, translator)
+	sqlConn := adapter.NewSQLAdapter(connector, translator, nil)
 
-	err := sqlConn.Open()
+	db, err := sqlConn.Open()
 	require.NoError(t, err)
 
 	query := "UPDATE customers SET age = :1 WHERE name = :2"
-	adapter.PatchExec(query, sqlcommons.InvalidNumericValue, "twelve", "Pablo")
+	connector.PatchExec(query, sqlcommons.InvalidNumericValue, "twelve", "Pablo")
 
 	// Exec
-	_, err2 := sqlConn.Exec(query, "twelve", "Pablo")
+	_, err2 := db.Exec(query, "twelve", "Pablo")
 
 	require.ErrorIs(t, err2, sqlcommons.InvalidNumericValue)
 
-	sqlConn.Close()
+	db.Close()
 }
 
 func Test_sqlConn_CanThrowValueLargerThanPrecisionError(t *testing.T) {
 	// Setup
-	adapter := enginesMocks.NewMockSQLEngineAdapter(true)
+	connector := enginesMocks.NewMockSQLConnector(true)
 	translator := translators.NewNoopTranslator()
-	sqlConn := sqldb.NewSQLDB(adapter, translator)
+	sqlConn := adapter.NewSQLAdapter(connector, translator, nil)
 
-	err := sqlConn.Open()
+	db, err := sqlConn.Open()
 	require.NoError(t, err)
 
 	query := "UPDATE customers SET age = :1 WHERE name = :2"
-	adapter.PatchExec(query, sqlcommons.ValueLargerThanPrecision, 949.0044, "Pablo")
+	connector.PatchExec(query, sqlcommons.ValueLargerThanPrecision, 949.0044, "Pablo")
 
 	// Exec
-	_, err2 := sqlConn.Exec(query, 949.0044, "Pablo")
+	_, err2 := db.Exec(query, 949.0044, "Pablo")
 
 	require.ErrorIs(t, err2, sqlcommons.ValueLargerThanPrecision)
 
-	sqlConn.Close()
+	db.Close()
 }
 
-func dropTablesHelper(sqlClient sqlcommons.SQLClient) error {
+func dropTablesHelper(db *sql.DB) error {
 
-	if _, err := sqlClient.Exec(`DROP TABLE IF EXISTS customers_groups`); err != nil {
+	if _, err := db.Exec(`DROP TABLE IF EXISTS customers_groups`); err != nil {
 		return err
 	}
-	if _, err := sqlClient.Exec(`DROP TABLE IF EXISTS customers`); err != nil {
+	if _, err := db.Exec(`DROP TABLE IF EXISTS customers`); err != nil {
 		return err
 	}
 	return nil
 }
 
-func createTablesHelper(sqlClient sqlcommons.SQLClient) error {
+func createTablesHelper(db *sql.DB) error {
 
-	if _, err := sqlClient.Exec(`CREATE TABLE IF NOT EXISTS customers_groups (
+	if _, err := db.Exec(`CREATE TABLE IF NOT EXISTS customers_groups (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		groupname TEXT NOT NULL)`); err != nil {
 		return err
 	}
-	if _, err := sqlClient.Exec(`CREATE TABLE IF NOT EXISTS customers (
+	if _, err := db.Exec(`CREATE TABLE IF NOT EXISTS customers (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name CHAR(10) NOT NULL,
 		updatetime TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
@@ -339,13 +343,13 @@ func createTablesHelper(sqlClient sqlcommons.SQLClient) error {
 	return nil
 }
 
-func insertDataHelper(sqlClient sqlcommons.SQLClient) error {
+func insertDataHelper(db *sql.DB) error {
 
-	if _, err := sqlClient.Exec(`INSERT INTO customers_groups (groupname) VALUES('General');`); err != nil {
+	if _, err := db.Exec(`INSERT INTO customers_groups (groupname) VALUES('General');`); err != nil {
 		return err
 	}
 
-	if statement, err := sqlClient.Prepare("INSERT INTO customers (name, updatetime, age, cust_group)VALUES(:1, :2, :3, :4)"); err != nil {
+	if statement, err := db.Prepare("INSERT INTO customers (name, updatetime, age, cust_group)VALUES(:1, :2, :3, :4)"); err != nil {
 		return err
 	} else {
 		if _, err := statement.Exec("Juan", time.Now(), nil, 1); err != nil {

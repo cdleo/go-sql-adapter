@@ -21,7 +21,7 @@ type oracleConn struct {
 
 const oracle_DriverName = "godror-proxy"
 
-func NewOracleSqlConn(host string, port int, user string, password string, database string) adapter.SQLEngineConnector {
+func NewOracleSqlConnector(host string, port int, user string, password string, database string) adapter.SQLEngineConnector {
 
 	return &oracleConn{
 		connString: fmt.Sprintf("(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=%s)(PORT=%d))(CONNECT_DATA=(%s)))", host, port, database),
@@ -30,7 +30,7 @@ func NewOracleSqlConn(host string, port int, user string, password string, datab
 	}
 }
 
-func NewOracleTNSSqlConn(tnsName string, user string, password string) adapter.SQLEngineConnector {
+func NewOracleTNSSqlConnector(tnsName string, user string, password string) adapter.SQLEngineConnector {
 
 	return &oracleConn{
 		connString: fmt.Sprintf("connectString=%s", tnsName),

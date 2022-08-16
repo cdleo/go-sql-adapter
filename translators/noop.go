@@ -1,6 +1,6 @@
 package translators
 
-import adapter "go-sql-adapter"
+import adapter "github.com/cdleo/go-sql-adapter"
 
 type noopTranslator struct{}
 

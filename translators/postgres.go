@@ -1,9 +1,10 @@
 package translators
 
 import (
-	adapter "go-sql-adapter"
 	"regexp"
 	"strings"
+
+	adapter "github.com/cdleo/go-sql-adapter"
 )
 
 type postgresTranslator struct {

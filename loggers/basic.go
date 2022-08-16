@@ -115,10 +115,13 @@ func (l *basicLogger) logMsg(msgLevel logger.LogLevel, err error, format string,
 
 	if l.level.IsLogAllowed(msgLevel) {
 		if err != nil {
-			fmt.Printf("[%s], ERROR: %s", msgLevel.String(), err)
+			fmt.Printf("[%s], ERROR: %s\n", msgLevel.String(), err)
 		} else {
-			fmt.Printf("[%s] "+format, msgLevel.String(), v)
+			if v == nil {
+				fmt.Printf("[%s] "+format+"\n", msgLevel.String())
+			} else {
+				fmt.Printf("["+msgLevel.String()+"] "+format+"\n", v...)
+			}
 		}
-
 	}
 }
