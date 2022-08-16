@@ -13,11 +13,11 @@ type basicLogger struct {
 	refID string
 }
 
-func NewBasicLogger() (logger.Logger, error) {
+func NewBasicLogger() logger.Logger {
 	return &basicLogger{
 		level: logger.LogLevel_Info,
 		refID: "",
-	}, nil
+	}
 }
 
 func (l *basicLogger) SetLogLevel(level string) error {
