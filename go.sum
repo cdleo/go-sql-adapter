@@ -2,8 +2,8 @@ github.com/DATA-DOG/go-sqlmock v1.5.0 h1:Shsta01QNfFxHCfpW6YH2STWB0MudeXXEWMr20O
 github.com/DATA-DOG/go-sqlmock v1.5.0/go.mod h1:f/Ixk793poVmq4qj/V1dPUg2JEAKC73Q5eFN3EC/SaM=
 github.com/cdleo/go-commons v0.0.0-20220616132805-9c906336a116 h1:gKk9708sjSYOu/QGL1gXKA2eu/hw5kwLmexZ3enXVLQ=
 github.com/cdleo/go-commons v0.0.0-20220616132805-9c906336a116/go.mod h1:BQ8SpAF6lpwFND3DIC8i1/ZsQhcmk2YSrj76gTjgwjw=
-github.com/cdleo/go-sqldb v0.0.0-20220616195529-93e5b12e7cfc h1:yritv+lMamoRqBbTvZcB9WGbtatV6hZuBX3niv/+7LI=
-github.com/cdleo/go-sqldb v0.0.0-20220616195529-93e5b12e7cfc/go.mod h1:keMB82kTGSwz0eeEPL9AeQH0+iTEacYJFW7jBvLbV5A=
+github.com/cdleo/go-sql-proxy v0.0.0-20220815222350-8bfffe4f68e4 h1:MjSakjvm6yhOJNHawGbVqqoJAOdFab0pAWTtKTOb7J4=
+github.com/cdleo/go-sql-proxy v0.0.0-20220815222350-8bfffe4f68e4/go.mod h1:vVJSrKnOW48emgk/nzJ1zSa/L1wI4Ba4pNO+B3fnyqg=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

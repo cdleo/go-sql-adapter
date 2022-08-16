@@ -5,7 +5,7 @@ import (
 	"database/sql/driver"
 	"fmt"
 
-	adapter "go-sql-adapter"
+	adapter "github.com/cdleo/go-sql-adapter"
 
 	"github.com/cdleo/go-commons/sqlcommons"
 	"github.com/mattn/go-sqlite3"
@@ -17,7 +17,7 @@ type sqlite3Conn struct {
 
 const sqlite3_DriverName = "sqlite3-adapter"
 
-func NewSqlite3Adapter(url string) adapter.SQLEngineConnector {
+func NewSqlite3Connector(url string) adapter.SQLEngineConnector {
 	return &sqlite3Conn{
 		url,
 	}

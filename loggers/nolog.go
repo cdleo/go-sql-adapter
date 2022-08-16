@@ -10,7 +10,7 @@ import (
 type null struct {
 }
 
-func Newnullger() (logger.Logger, error) {
+func NewNullLogger() (logger.Logger, error) {
 	return &null{}, nil
 }
 

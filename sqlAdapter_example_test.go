@@ -20,10 +20,11 @@ type People struct {
 
 func Example_sqlAdapter() {
 
-	connector := engines.NewSqlite3Adapter(":memory:")
+	connector := engines.NewSqlite3Connector(":memory:")
 	translator := translators.NewNoopTranslator()
-	logger, _ := loggers.NewBasicLogger()
-	sqlAdapter := adapter.NewSQLAdapter(connector, translator, logger)
+	stdoutLogger, _ := loggers.NewBasicLogger()
+	//stdoutLogger.SetLogLevel(logger.LogLevel_Trace.String())
+	sqlAdapter := adapter.NewSQLAdapter(connector, translator, stdoutLogger)
 
 	db, err := sqlAdapter.Open()
 	if err != nil {
@@ -32,23 +33,18 @@ func Example_sqlAdapter() {
 	}
 	defer db.Close()
 
-	statement, err := db.Prepare("CREATE TABLE IF NOT EXISTS people (id INTEGER PRIMARY KEY, firstname TEXT, lastname TEXT)")
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS people (id INTEGER PRIMARY KEY, firstname TEXT, lastname TEXT)")
 	if err != nil {
-		fmt.Printf("Unable to prepare statement %v\n", err)
-		os.Exit(1)
-	}
-	_, err = statement.Exec()
-	if err != nil {
-		fmt.Printf("Unable to exec statement %v\n", err)
+		fmt.Printf("Unable to execute statement %v\n", err)
 		os.Exit(1)
 	}
 
-	statement, err = db.Prepare("INSERT INTO people (firstname, lastname) VALUES (?, ?)")
+	stmt, err := db.Prepare("INSERT INTO people (firstname, lastname) VALUES (?, ?)")
 	if err != nil {
 		fmt.Printf("Unable to prepare statement %v\n", err)
 		os.Exit(1)
 	}
-	_, err = db.Exec("Gene", "Kranz")
+	_, err = stmt.Exec("Gene", "Kranz")
 	if err != nil {
 		fmt.Printf("Unable to exec statement %v\n", err)
 		os.Exit(1)
