@@ -22,7 +22,7 @@ func Example_sqlAdapter() {
 
 	connector := engines.NewSqlite3Connector(":memory:")
 	translator := translators.NewNoopTranslator()
-	stdoutLogger, _ := loggers.NewBasicLogger()
+	stdoutLogger := loggers.NewBasicLogger()
 	//stdoutLogger.SetLogLevel(logger.LogLevel_Trace.String())
 	sqlAdapter := adapter.NewSQLAdapter(connector, translator, stdoutLogger)
 

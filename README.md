@@ -1,33 +1,17 @@
 # go-sql-adapter
 
-[![Go Reference](http://img.shields.io/badge/godoc-reference-blue.svg?style=flat)](https://pkg.go.dev/github.com/cdleo/go-sqldb) [![license](http://img.shields.io/badge/license-MIT-red.svg?style=flat)](https://raw.githubusercontent.com/cdleo/go-sqldb/master/LICENSE) [![Build Status](https://scrutinizer-ci.com/g/cdleo/go-sqldb/badges/build.png?b=main)](https://scrutinizer-ci.com/g/cdleo/go-sqldb/build-status/main) [![Code Coverage](https://scrutinizer-ci.com/g/cdleo/go-sqldb/badges/coverage.png?b=main)](https://scrutinizer-ci.com/g/cdleo/go-sqldb/?branch=main) [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/cdleo/go-sqldb/badges/quality-score.png?b=main)](https://scrutinizer-ci.com/g/cdleo/go-sqldb/?branch=main)
+[![Go Reference](http://img.shields.io/badge/godoc-reference-blue.svg?style=flat)](https://pkg.go.dev/github.com/cdleo/go-sql-adapter) [![license](http://img.shields.io/badge/license-MIT-red.svg?style=flat)](https://raw.githubusercontent.com/cdleo/go-sql-adapter/master/LICENSE) [![Build Status](https://scrutinizer-ci.com/g/cdleo/go-sql-adapter/badges/build.png?b=main)](https://scrutinizer-ci.com/g/cdleo/go-sql-adapter/build-status/main) [![Code Coverage](https://scrutinizer-ci.com/g/cdleo/go-sql-adapter/badges/coverage.png?b=main)](https://scrutinizer-ci.com/g/cdleo/go-sql-adapter/?branch=main) [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/cdleo/go-sql-adapter/badges/quality-score.png?b=main)](https://scrutinizer-ci.com/g/cdleo/go-sql-adapter/?branch=main)
 
-go-sqlDB it's a muti DB Engine wrapper for the GO **database/sql** package. It provides a set of standard error codes, providing abstraction from the implemented DB engine and allowing changing it (almost) just modifying configuration, without the need to modify source code.
-Besides that, provides a very limited cross-engine sql translator.
 
 ## General
-The sqlClient contract resides on the go-commons repository: [github.com/cdleo/go-commons/sqlcommons/sqlClient.go](https://ithub.com/cdleo/go-commons/sqlcommons/sqlClient.go):
-```go
-type SQLClient interface {
-	Open() error
-	Close()
-	IsOpen() error
 
-	Begin() (SQLTx, error)
-	BeginTx(ctx context.Context, opts *sql.TxOptions) (SQLTx, error)
+**go-sql-adapter** it's a muti DB Engine adapter over the GO **database/sql** package. It provides a set of standard error codes, providing abstraction from the implemented DB engine, allowing change the DB just modifying the configuration and without need adjust or modify the source code.
+Besides that, provides a very limited cross-engine sql translator.
 
-	Exec(query string, args ...interface{}) (sql.Result, error)
-	ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
+Another feature included in the package it's the automatic logging of the executed sentences and it's elapsed time, trougth the implementation of the Logger interface: [github.com/cdleo/go-commons/logger/logger.go](https://github.com/cdleo/go-commons/logger/logger.go)
 
-	Prepare(query string) (SQLStmt, error)
-	PrepareContext(ctx context.Context, query string) (SQLStmt, error)
+This package provides a nolog and a basic implementation of that interface, but if you need a more customized and powerful implementation, you can use the following one: [github.com/cdleo/go-zla](https://github.com/cdleo/go-zla)
 
-	Query(query string, args ...interface{}) (*sql.Rows, error)
-	QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error)
-	QueryRow(query string, args ...interface{}) *sql.Row
-	QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row
-}
-```
 
 **Supported Engines**
 Currently, the next set of engines are supported:
@@ -39,16 +23,18 @@ Currently, the next set of engines are supported:
 **Usage**
 This example program shows the initialization and the use at basic level:
 ```go
-package sqldb_test
+package sqladapter_test
 
 import (
 	"fmt"
+
 	"os"
 	"strconv"
 
-	"github.com/cdleo/go-sqldb"
-	"github.com/cdleo/go-sqldb/engines"
-	"github.com/cdleo/go-sqldb/translators"
+	adapter "github.com/cdleo/go-sql-adapter"
+	"github.com/cdleo/go-sql-adapter/engines"
+	"github.com/cdleo/go-sql-adapter/loggers"
+	"github.com/cdleo/go-sql-adapter/translators"
 )
 
 type People struct {
@@ -57,41 +43,38 @@ type People struct {
 	Apellido string `db:"lastname"`
 }
 
-func Example_sqlConn() {
+func Example_sqlAdapter() {
 
-	adapter := engines.NewSqlite3Adapter(":memory:")
+	connector := engines.NewSqlite3Connector(":memory:")
 	translator := translators.NewNoopTranslator()
-	sqlConn := sqldb.NewSQLDB(adapter, translator)
+	stdoutLogger := loggers.NewBasicLogger()
+	sqlAdapter := adapter.NewSQLAdapter(connector, translator, stdoutLogger)
 
-	if err := sqlConn.Open(); err != nil {
+	db, err := sqlAdapter.Open()
+	if err != nil {
 		fmt.Println("Unable to connect to DB")
 		os.Exit(1)
 	}
-	defer sqlConn.Close()
+	defer db.Close()
 
-	statement, err := sqlConn.Prepare("CREATE TABLE IF NOT EXISTS people (id INTEGER PRIMARY KEY, firstname TEXT, lastname TEXT)")
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS people (id INTEGER PRIMARY KEY, firstname TEXT, lastname TEXT)")
+	if err != nil {
+		fmt.Printf("Unable to execute statement %v\n", err)
+		os.Exit(1)
+	}
+
+	stmt, err := db.Prepare("INSERT INTO people (firstname, lastname) VALUES (?, ?)")
 	if err != nil {
 		fmt.Printf("Unable to prepare statement %v\n", err)
 		os.Exit(1)
 	}
-	_, err = statement.Exec()
+	_, err = stmt.Exec("Gene", "Kranz")
 	if err != nil {
 		fmt.Printf("Unable to exec statement %v\n", err)
 		os.Exit(1)
 	}
 
-	statement, err = sqlConn.Prepare("INSERT INTO people (firstname, lastname) VALUES (?, ?)")
-	if err != nil {
-		fmt.Printf("Unable to prepare statement %v\n", err)
-		os.Exit(1)
-	}
-	_, err = statement.Exec("Gene", "Kranz")
-	if err != nil {
-		fmt.Printf("Unable to exec statement %v\n", err)
-		os.Exit(1)
-	}
-
-	rows, err := sqlConn.Query("SELECT id, firstname, lastname FROM people")
+	rows, err := db.Query("SELECT id, firstname, lastname FROM people")
 	if err != nil {
 		fmt.Printf("Unable to query data %v\n", err)
 		os.Exit(1)
@@ -110,7 +93,7 @@ func Example_sqlConn() {
 
 ## Sample
 
-You can find a sample of the use of go-sqldb project [HERE](https://github.com/cdleo/go-sql-adapter/blob/master/sqlAdapter_example_test.go)
+You can find a sample of the use of go-sql-adapter project [HERE](https://github.com/cdleo/go-sql-adapter/blob/master/sqlAdapter_example_test.go)
 
 ## Contributing
 
